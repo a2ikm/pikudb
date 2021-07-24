@@ -1,4 +1,4 @@
-package diskmanager
+package main
 
 import (
 	"io"
