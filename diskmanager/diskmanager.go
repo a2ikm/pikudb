@@ -7,9 +7,11 @@ import (
 
 const PageSize = 4096
 
+type PageId = int64
+
 type DiskManager struct {
 	heapFile   *os.File
-	nextPageId int64
+	nextPageId PageId
 }
 
 func New(heapFile *os.File) (*DiskManager, error) {
@@ -18,7 +20,7 @@ func New(heapFile *os.File) (*DiskManager, error) {
 		return nil, err
 	}
 
-	nextPageId := int64(fi.Size() / PageSize)
+	nextPageId := PageId(fi.Size() / PageSize)
 
 	return &DiskManager{
 		heapFile:   heapFile,
@@ -35,20 +37,20 @@ func Open(heapFilePath string) (*DiskManager, error) {
 	return New(heapFile)
 }
 
-func (dm *DiskManager) AllocatePage() int64 {
+func (dm *DiskManager) AllocatePage() PageId {
 	pageId := dm.nextPageId
 	dm.nextPageId += 1
 	return pageId
 }
 
-func (dm *DiskManager) ReadPageData(pageId int64, data []byte) error {
+func (dm *DiskManager) ReadPageData(pageId PageId, data []byte) error {
 	offset := PageSize * pageId
 	dm.heapFile.Seek(offset, io.SeekStart)
 	_, err := dm.heapFile.Read(data)
 	return err
 }
 
-func (dm *DiskManager) WritePageData(pageId int64, data []byte) error {
+func (dm *DiskManager) WritePageData(pageId PageId, data []byte) error {
 	offset := PageSize * pageId
 	dm.heapFile.Seek(offset, io.SeekStart)
 	_, err := dm.heapFile.Write(data)
