@@ -1,12 +1,18 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"os"
 )
 
+var (
+	ErrTooLargePage = errors.New("too large page")
+)
+
 const PageSize = 4096
 
+type Page = []byte
 type PageId = int64
 
 type DiskManager struct {
@@ -43,16 +49,20 @@ func (dm *DiskManager) AllocatePage() PageId {
 	return pageId
 }
 
-func (dm *DiskManager) ReadPageData(pageId PageId, data []byte) error {
+func (dm *DiskManager) ReadPageData(pageId PageId, page Page) error {
 	offset := PageSize * pageId
 	dm.heapFile.Seek(offset, io.SeekStart)
-	_, err := dm.heapFile.Read(data)
+	_, err := dm.heapFile.Read(page)
 	return err
 }
 
-func (dm *DiskManager) WritePageData(pageId PageId, data []byte) error {
+func (dm *DiskManager) WritePageData(pageId PageId, page Page) error {
+	if len(page) > PageSize {
+		return ErrTooLargePage
+	}
+
 	offset := PageSize * pageId
 	dm.heapFile.Seek(offset, io.SeekStart)
-	_, err := dm.heapFile.Write(data)
+	_, err := dm.heapFile.Write(page)
 	return err
 }
