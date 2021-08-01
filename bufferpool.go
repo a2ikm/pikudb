@@ -30,6 +30,13 @@ type BufferPool struct {
 	nextVictimId bufferId
 }
 
+func NewBufferPool(size uint64) *BufferPool {
+	return &BufferPool{
+		buffers:      make([]*Buffer, size),
+		nextVictimId: 0,
+	}
+}
+
 func (p *BufferPool) size() int {
 	return len(p.buffers)
 }
@@ -41,8 +48,9 @@ func (p *BufferPool) evict() (bufferId, bool) {
 	for {
 		buffer := p.buffers[p.nextVictimId]
 
-		if buffer.retainCount == 0 {
-			return p.nextVictimId, true
+		if buffer == nil || buffer.retainCount == 0 {
+			bufferId := p.incrementVictimId()
+			return bufferId, true
 		} else {
 			pinned += 1
 			if pinned >= size {
@@ -50,18 +58,28 @@ func (p *BufferPool) evict() (bufferId, bool) {
 			}
 		}
 
-		p.nextVictimId = p.incrementId(p.nextVictimId)
+		p.incrementVictimId()
 	}
 }
 
-func (p *BufferPool) incrementId(bid bufferId) bufferId {
-	return (bid + 1) % bufferId(p.size())
+func (p *BufferPool) incrementVictimId() bufferId {
+	bid := p.nextVictimId
+	p.nextVictimId = (p.nextVictimId + 1) % bufferId(p.size())
+	return bid
 }
 
 type BufferPoolManager struct {
 	disk      *DiskManager
 	pool      *BufferPool
 	pageTable map[PageId]bufferId
+}
+
+func NewBufferPoolManager(disk *DiskManager, pool *BufferPool) *BufferPoolManager {
+	return &BufferPoolManager{
+		disk:      disk,
+		pool:      pool,
+		pageTable: map[PageId]bufferId{},
+	}
 }
 
 func (m *BufferPoolManager) FetchPage(pageId PageId) (*Buffer, error) {
@@ -93,5 +111,6 @@ func (m *BufferPoolManager) FetchPage(pageId PageId) (*Buffer, error) {
 	}
 	m.disk.ReadPageData(pageId, buffer.Page)
 	m.pageTable[pageId] = bufferId
+	m.pool.buffers[bufferId] = buffer
 	return buffer, nil
 }
