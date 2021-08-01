@@ -20,7 +20,7 @@ type DiskManager struct {
 	nextPageId PageId
 }
 
-func New(heapFile *os.File) (*DiskManager, error) {
+func NewDiskManager(heapFile *os.File) (*DiskManager, error) {
 	fi, err := heapFile.Stat()
 	if err != nil {
 		return nil, err
@@ -34,13 +34,13 @@ func New(heapFile *os.File) (*DiskManager, error) {
 	}, nil
 }
 
-func Open(heapFilePath string) (*DiskManager, error) {
+func OpenDiskManager(heapFilePath string) (*DiskManager, error) {
 	heapFile, err := os.OpenFile(heapFilePath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, err
 	}
 
-	return New(heapFile)
+	return NewDiskManager(heapFile)
 }
 
 func (dm *DiskManager) AllocatePage() PageId {
