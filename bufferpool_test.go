@@ -29,7 +29,7 @@ func TestBufferPool(t *testing.T) {
 		t.Errorf("Expected FetchData(pageId0) successful but got error: %v\n", err)
 	}
 
-	_, err = m.FetchPage(pageId1)
+	buffer1, err := m.FetchPage(pageId1)
 	if err != nil {
 		t.Errorf("Expected FetchData(pageId0) successful but got error: %v\n", err)
 	}
@@ -37,5 +37,12 @@ func TestBufferPool(t *testing.T) {
 	_, err = m.FetchPage(pageId2)
 	if err == nil {
 		t.Errorf("Expected FetchData(pageId2) failure but succeeded\n")
+	}
+
+	buffer1.Release()
+
+	_, err = m.FetchPage(pageId2)
+	if err != nil {
+		t.Errorf("Expected FetchData(pageId2) successful but got error: %v\n", err)
 	}
 }
